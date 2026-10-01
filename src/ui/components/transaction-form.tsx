@@ -22,12 +22,14 @@ type TransactionFormProps = {
   description: string;
   formError: string | null;
   isSaving: boolean;
+  isEditing: boolean;
   onAccountChange: (accountId: string) => void;
   onTypeChange: (type: TransactionType) => void;
   onAmountChange: (amount: string) => void;
   onDateChange: (date: string) => void;
   onDescriptionChange: (description: string) => void;
   onSubmit: () => void;
+  onCancelEdit: () => void;
 };
 
 export default function TransactionForm({
@@ -39,12 +41,14 @@ export default function TransactionForm({
   description,
   formError,
   isSaving,
+  isEditing,
   onAccountChange,
   onTypeChange,
   onAmountChange,
   onDateChange,
   onDescriptionChange,
   onSubmit,
+  onCancelEdit,
 }: TransactionFormProps) {
   const isDisabled = isSaving || accounts.length === 0;
   const [isPickerOpen, setIsPickerOpen] = useState(false);
@@ -52,7 +56,9 @@ export default function TransactionForm({
 
   return (
     <View style={styles.container}>
-      <Text style={styles.sectionTitle}>New transaction</Text>
+      <Text style={styles.sectionTitle}>
+        {isEditing ? "Edit transaction" : "New transaction"}
+      </Text>
 
       <View style={styles.segment}>
         {(["expense", "income"] as const).map((option) => (
@@ -193,9 +199,24 @@ export default function TransactionForm({
         ]}
       >
         <Text style={styles.saveButtonText}>
-          {isSaving ? "Saving..." : "Save transaction"}
+          {isSaving
+            ? "Saving..."
+            : isEditing
+              ? "Save changes"
+              : "Save transaction"}
         </Text>
       </Pressable>
+
+      {isEditing ? (
+        <Pressable
+          accessibilityRole="button"
+          disabled={isSaving}
+          onPress={onCancelEdit}
+          style={styles.cancelButton}
+        >
+          <Text style={styles.cancelButtonText}>Cancel</Text>
+        </Pressable>
+      ) : null}
     </View>
   );
 }
@@ -338,5 +359,16 @@ const styles = StyleSheet.create({
     color: "#ffffff",
     fontSize: 15,
     fontWeight: "800",
+  },
+  cancelButton: {
+    minHeight: 44,
+    alignItems: "center",
+    justifyContent: "center",
+    marginTop: 8,
+  },
+  cancelButtonText: {
+    color: "#53625b",
+    fontSize: 14,
+    fontWeight: "700",
   },
 });

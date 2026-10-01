@@ -83,4 +83,8 @@ export class AccountRepository {
   async archive(id: string): Promise<void> {
     await this.db.runAsync("UPDATE accounts SET archived=1 WHERE id = ?", [id]);
   }
+
+  async deleteAll(): Promise<void> {
+    await this.db.runAsync("DELETE FROM accounts");
+  }
 }

@@ -8,9 +8,10 @@ import type {
 } from "@/features/transactions/transaction.types";
 import { Link, useFocusEffect } from "expo-router";
 import { useSQLiteContext, type SQLiteDatabase } from "expo-sqlite";
-import { useCallback, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import {
   ActivityIndicator,
+  Alert,
   FlatList,
   Keyboard,
   Pressable,
@@ -56,6 +57,10 @@ export default function TransactionsScreen() {
   const [amount, setAmount] = useState("");
   const [description, setDescription] = useState("");
   const [date, setDate] = useState(() => toDateString(new Date()));
+  const [editingId, setEditingId] = useState<string | null>(null);
+  // Mirrors editingId so loadData can read it without becoming a dependency.
+  const editingIdRef = useRef<string | null>(null);
+  const listRef = useRef<FlatList<Transaction>>(null);
 
   const db = useSQLiteContext();
 
@@ -65,11 +70,14 @@ export default function TransactionsScreen() {
       setAccounts(data.accounts);
       setAllAccounts(data.allAccounts);
       setTransactions(data.transactions);
-      setAccountId((current) =>
-        data.accounts.some((account) => account.id === current)
+      setAccountId((current) => {
+        const selectable = editingIdRef.current
+          ? data.allAccounts
+          : data.accounts;
+        return selectable.some((account) => account.id === current)
           ? current
-          : (data.accounts[0]?.id ?? ""),
-      );
+          : (data.accounts[0]?.id ?? "");
+      });
       setLoadError(null);
     } catch (error) {
       setLoadError(
@@ -96,7 +104,67 @@ export default function TransactionsScreen() {
     }
   }
 
-  async function handleCreateTransaction() {
+  function resetForm() {
+    editingIdRef.current = null;
+    setEditingId(null);
+    setAmount("");
+    setDescription("");
+    setDate(toDateString(new Date()));
+    setFormError(null);
+    setAccountId((current) =>
+      accounts.some((account) => account.id === current)
+        ? current
+        : (accounts[0]?.id ?? ""),
+    );
+  }
+
+  function startEdit(transaction: Transaction) {
+    editingIdRef.current = transaction.id;
+    setEditingId(transaction.id);
+    setType(transaction.type);
+    setAccountId(transaction.accountId);
+    setAmount(String(transaction.amount));
+    setDescription(transaction.description);
+    setDate(transaction.date.slice(0, 10));
+    setFormError(null);
+    listRef.current?.scrollToOffset({ offset: 0, animated: true });
+  }
+
+  function requestDelete(transaction: Transaction) {
+    Alert.alert(
+      "Delete transaction?",
+      `"${transaction.description}" will be removed and the account balance will update.`,
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Delete",
+          style: "destructive",
+          onPress: () => {
+            void deleteTransaction(transaction);
+          },
+        },
+      ],
+    );
+  }
+
+  async function deleteTransaction(transaction: Transaction) {
+    try {
+      await new TransactionService(new TransactionRepository(db)).delete(
+        transaction.id,
+      );
+      if (editingIdRef.current === transaction.id) {
+        resetForm();
+      }
+      await loadData();
+    } catch (error) {
+      Alert.alert(
+        "Could not delete",
+        error instanceof Error ? error.message : "Something went wrong.",
+      );
+    }
+  }
+
+  async function handleSubmit() {
     setFormError(null);
 
     if (!accountId) {
@@ -118,19 +186,36 @@ export default function TransactionsScreen() {
     setIsSaving(true);
     try {
       const service = new TransactionService(new TransactionRepository(db));
-      await service.create({
-        id: Date.now().toString(),
-        accountId,
-        type,
-        amount: parsedAmount,
-        description: description.trim(),
-        date,
-      });
+      const original = editingId
+        ? transactions.find((entry) => entry.id === editingId)
+        : undefined;
 
-      setTransactions(await service.getAll());
-      setAmount("");
-      setDescription("");
-      setDate(toDateString(new Date()));
+      if (editingId && !original) {
+        throw new Error("This transaction no longer exists.");
+      }
+
+      if (original) {
+        await service.update({
+          ...original,
+          accountId,
+          type,
+          amount: parsedAmount,
+          description: description.trim(),
+          date,
+        });
+      } else {
+        await service.create({
+          id: Date.now().toString(),
+          accountId,
+          type,
+          amount: parsedAmount,
+          description: description.trim(),
+          date,
+        });
+      }
+
+      resetForm();
+      await loadData();
       Keyboard.dismiss();
     } catch (error) {
       setFormError(
@@ -141,8 +226,14 @@ export default function TransactionsScreen() {
     }
   }
 
+  const formAccounts =
+    editingId && !accounts.some((account) => account.id === accountId)
+      ? [...accounts, ...allAccounts.filter((account) => account.id === accountId)]
+      : accounts;
+
   return (
     <FlatList
+      ref={listRef}
       style={styles.list}
       contentContainerStyle={styles.content}
       data={transactions}
@@ -156,11 +247,18 @@ export default function TransactionsScreen() {
               <Text style={styles.kicker}>MONEY FLOW</Text>
               <Text style={styles.title}>Transactions</Text>
             </View>
-            <Link href="/accounts" asChild>
-              <Pressable accessibilityRole="button" style={styles.accountsLink}>
-                <Text style={styles.accountsLinkText}>Accounts</Text>
-              </Pressable>
-            </Link>
+            <View style={styles.headerLinks}>
+              <Link href="/backup" asChild>
+                <Pressable accessibilityRole="button" style={styles.accountsLink}>
+                  <Text style={styles.accountsLinkText}>Backup</Text>
+                </Pressable>
+              </Link>
+              <Link href="/accounts" asChild>
+                <Pressable accessibilityRole="button" style={styles.accountsLink}>
+                  <Text style={styles.accountsLinkText}>Accounts</Text>
+                </Pressable>
+              </Link>
+            </View>
           </View>
 
           {loadError ? (
@@ -173,7 +271,7 @@ export default function TransactionsScreen() {
           ) : null}
 
           <TransactionForm
-            accounts={accounts}
+            accounts={formAccounts}
             accountId={accountId}
             type={type}
             amount={amount}
@@ -181,12 +279,14 @@ export default function TransactionsScreen() {
             description={description}
             formError={formError}
             isSaving={isSaving}
+            isEditing={editingId !== null}
             onAccountChange={setAccountId}
             onTypeChange={setType}
             onAmountChange={setAmount}
             onDateChange={setDate}
             onDescriptionChange={setDescription}
-            onSubmit={handleCreateTransaction}
+            onSubmit={handleSubmit}
+            onCancelEdit={resetForm}
           />
 
           <Text style={styles.listTitle}>Recent activity</Text>
@@ -207,6 +307,9 @@ export default function TransactionsScreen() {
             transaction={item}
             accountName={account?.name ?? "Account"}
             currency={account?.currency ?? "EUR"}
+            isEditing={item.id === editingId}
+            onEdit={startEdit}
+            onDelete={requestDelete}
           />
         );
       }}
@@ -240,6 +343,10 @@ const styles = StyleSheet.create({
     color: "#182522",
     fontSize: 28,
     fontWeight: "800",
+  },
+  headerLinks: {
+    flexDirection: "row",
+    gap: 8,
   },
   accountsLink: {
     minHeight: 42,

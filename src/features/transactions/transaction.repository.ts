@@ -84,4 +84,8 @@ export class TransactionRepository {
   async delete(id: string): Promise<void> {
     await this.db.runAsync("DELETE FROM transactions WHERE id = ?", [id]);
   }
+
+  async deleteAll(): Promise<void> {
+    await this.db.runAsync("DELETE FROM transactions");
+  }
 }
