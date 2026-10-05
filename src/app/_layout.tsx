@@ -3,17 +3,29 @@ import { Stack } from "expo-router";
 import { SQLiteProvider } from "expo-sqlite";
 import { StatusBar } from "expo-status-bar";
 import { Suspense } from "react";
-import { ActivityIndicator, StyleSheet, View } from "react-native";
+import { ActivityIndicator, View } from "react-native";
+import { useTheme } from "../ui/theme/use-theme";
 
 function DatabaseLoading() {
+  const { colors } = useTheme();
+
   return (
-    <View style={styles.loading}>
-      <ActivityIndicator color="#176c4c" />
+    <View
+      style={{
+        flex: 1,
+        alignItems: "center",
+        justifyContent: "center",
+        backgroundColor: colors.background,
+      }}
+    >
+      <ActivityIndicator color={colors.primary} />
     </View>
   );
 }
 
 export default function Layout() {
+  const { colors } = useTheme();
+
   return (
     <Suspense fallback={<DatabaseLoading />}>
       <SQLiteProvider
@@ -21,17 +33,17 @@ export default function Layout() {
         onInit={initializeDatabase}
         useSuspense
       >
-        <StatusBar style="dark" />
+        <StatusBar style="auto" />
         <Stack
           screenOptions={{
-            headerStyle: { backgroundColor: "#f3f6f4" },
+            headerStyle: { backgroundColor: colors.background },
             headerShadowVisible: false,
-            headerTintColor: "#176c4c",
+            headerTintColor: colors.primary,
             headerTitleStyle: {
-              color: "#182522",
+              color: colors.textPrimary,
               fontWeight: "700",
             },
-            contentStyle: { backgroundColor: "#f3f6f4" },
+            contentStyle: { backgroundColor: colors.background },
           }}
         >
           <Stack.Screen name="index" options={{ title: "Diru" }} />
@@ -42,12 +54,3 @@ export default function Layout() {
     </Suspense>
   );
 }
-
-const styles = StyleSheet.create({
-  loading: {
-    flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: "#f3f6f4",
-  },
-});

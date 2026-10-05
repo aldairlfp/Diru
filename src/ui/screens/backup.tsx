@@ -1,6 +1,6 @@
 import { BackupService, parseBackup } from "@/features/backup/backup.service";
 import { useSQLiteContext } from "expo-sqlite";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import {
   Alert,
   Keyboard,
@@ -12,10 +12,14 @@ import {
   TextInput,
   View,
 } from "react-native";
+import type { Palette } from "../theme/colors";
+import { useTheme } from "../theme/use-theme";
 
 type Notice = { kind: "success" | "error"; message: string };
 
 export default function BackupScreen() {
+  const { colors } = useTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const db = useSQLiteContext();
   const [isExporting, setIsExporting] = useState(false);
   const [isRestoring, setIsRestoring] = useState(false);
@@ -166,7 +170,7 @@ export default function BackupScreen() {
           value={backupText}
           onChangeText={setBackupText}
           placeholder="Paste backup text here"
-          placeholderTextColor="#929b98"
+          placeholderTextColor={colors.placeholder}
           autoCapitalize="none"
           autoCorrect={false}
           style={styles.input}
@@ -189,29 +193,30 @@ export default function BackupScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: Palette) =>
+  StyleSheet.create({
   container: {
     flexGrow: 1,
     paddingHorizontal: 20,
     paddingTop: 18,
     paddingBottom: 40,
-    backgroundColor: "#f3f6f4",
+    backgroundColor: colors.background,
   },
   kicker: {
     marginBottom: 4,
-    color: "#167253",
+    color: colors.primary,
     fontSize: 11,
     fontWeight: "800",
   },
   title: {
-    color: "#182522",
+    color: colors.textPrimary,
     fontSize: 28,
     fontWeight: "800",
   },
   intro: {
     marginTop: 10,
     marginBottom: 20,
-    color: "#53625b",
+    color: colors.textSecondary,
     fontSize: 14,
     lineHeight: 20,
   },
@@ -222,38 +227,38 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   },
   noticeSuccess: {
-    borderColor: "#bfdccc",
-    backgroundColor: "#eaf6ef",
+    borderColor: colors.primaryBorder,
+    backgroundColor: colors.primarySurface,
   },
   noticeError: {
-    borderColor: "#edc2bd",
-    backgroundColor: "#fff4f2",
+    borderColor: colors.dangerBorder,
+    backgroundColor: colors.dangerSurface,
   },
   successText: {
-    color: "#16583f",
+    color: colors.onPrimarySurface,
     fontSize: 13,
   },
   errorText: {
-    color: "#a33d32",
+    color: colors.danger,
     fontSize: 13,
   },
   card: {
     marginBottom: 16,
     padding: 16,
     borderWidth: 1,
-    borderColor: "#e1e8e4",
+    borderColor: colors.border,
     borderRadius: 8,
-    backgroundColor: "#ffffff",
+    backgroundColor: colors.surface,
   },
   sectionTitle: {
     marginBottom: 6,
-    color: "#182522",
+    color: colors.textPrimary,
     fontSize: 18,
     fontWeight: "800",
   },
   cardText: {
     marginBottom: 14,
-    color: "#68766f",
+    color: colors.textSecondary,
     fontSize: 13,
     lineHeight: 19,
   },
@@ -263,10 +268,10 @@ const styles = StyleSheet.create({
     marginBottom: 14,
     padding: 12,
     borderWidth: 1,
-    borderColor: "#d8e1dc",
+    borderColor: colors.borderStrong,
     borderRadius: 8,
-    backgroundColor: "#ffffff",
-    color: "#182522",
+    backgroundColor: colors.surface,
+    color: colors.textPrimary,
     fontSize: 13,
     textAlignVertical: "top",
   },
@@ -275,10 +280,10 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     borderRadius: 8,
-    backgroundColor: "#176c4c",
+    backgroundColor: colors.primary,
   },
   primaryButtonText: {
-    color: "#ffffff",
+    color: colors.onPrimary,
     fontSize: 15,
     fontWeight: "800",
   },
@@ -287,12 +292,12 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     borderRadius: 8,
-    backgroundColor: "#fff0ed",
+    backgroundColor: colors.dangerSurface,
     borderWidth: 1,
-    borderColor: "#edc2bd",
+    borderColor: colors.dangerBorder,
   },
   dangerButtonText: {
-    color: "#a33d32",
+    color: colors.danger,
     fontSize: 15,
     fontWeight: "800",
   },

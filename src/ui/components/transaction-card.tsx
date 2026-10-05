@@ -1,6 +1,9 @@
 import type { Transaction } from "@/features/transactions/transaction.types";
 import { formatCurrency } from "@/ui/utils/format-currency";
+import { useMemo } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
+import type { Palette } from "../theme/colors";
+import { useTheme } from "../theme/use-theme";
 import { formatDateLabel, fromDateString } from "../utils/date";
 
 type TransactionCardProps = {
@@ -20,6 +23,8 @@ export default function TransactionCard({
   onEdit,
   onDelete,
 }: TransactionCardProps) {
+  const { colors } = useTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const isIncome = transaction.type === "income";
 
   return (
@@ -62,7 +67,8 @@ export default function TransactionCard({
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: Palette) =>
+  StyleSheet.create({
   container: {
     flexDirection: "row",
     alignItems: "center",
@@ -70,9 +76,9 @@ const styles = StyleSheet.create({
     marginBottom: 8,
     padding: 14,
     borderWidth: 1,
-    borderColor: "#e5ebe7",
+    borderColor: colors.border,
     borderRadius: 8,
-    backgroundColor: "#ffffff",
+    backgroundColor: colors.surface,
   },
   marker: {
     width: 9,
@@ -80,8 +86,8 @@ const styles = StyleSheet.create({
     borderRadius: 4,
   },
   containerEditing: {
-    borderColor: "#167253",
-    backgroundColor: "#f1f8f4",
+    borderColor: colors.primary,
+    backgroundColor: colors.primarySurface,
   },
   actions: {
     flexDirection: "row",
@@ -89,32 +95,32 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   editText: {
-    color: "#176c4c",
+    color: colors.primary,
     fontSize: 12,
     fontWeight: "700",
   },
   deleteText: {
-    color: "#a33d32",
+    color: colors.danger,
     fontSize: 12,
     fontWeight: "700",
   },
   incomeMarker: {
-    backgroundColor: "#16805c",
+    backgroundColor: colors.income,
   },
   expenseMarker: {
-    backgroundColor: "#d45151",
+    backgroundColor: colors.expense,
   },
   details: {
     flex: 1,
     gap: 4,
   },
   description: {
-    color: "#1d2c26",
+    color: colors.textPrimary,
     fontSize: 14,
     fontWeight: "700",
   },
   meta: {
-    color: "#77847d",
+    color: colors.textMuted,
     fontSize: 12,
   },
   amount: {
@@ -122,9 +128,9 @@ const styles = StyleSheet.create({
     fontWeight: "800",
   },
   income: {
-    color: "#167253",
+    color: colors.income,
   },
   expense: {
-    color: "#ba4b42",
+    color: colors.expense,
   },
 });

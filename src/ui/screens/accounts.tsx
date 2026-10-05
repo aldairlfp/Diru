@@ -3,7 +3,7 @@ import { AccountService } from "@/features/accounts/account.service";
 import type { Account, AccountType } from "@/features/accounts/account.types";
 import { TransactionRepository } from "@/features/transactions/transaction.repository";
 import { useSQLiteContext, type SQLiteDatabase } from "expo-sqlite";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -16,6 +16,8 @@ import {
 } from "react-native";
 import AccountCard from "../components/account-card";
 import AccountForm from "../components/account-form";
+import type { Palette } from "../theme/colors";
+import { useTheme } from "../theme/use-theme";
 import { formatCurrency } from "../utils/format-currency";
 
 type AccountWithBalance = Account & { balance: number };
@@ -30,6 +32,8 @@ function createAccountService(db: SQLiteDatabase) {
 }
 
 export default function AccountsScreen() {
+  const { colors } = useTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const [accounts, setAccounts] = useState<AccountWithBalance[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -166,7 +170,13 @@ export default function AccountsScreen() {
     <ScrollView
       contentContainerStyle={styles.container}
       refreshControl={
-        <RefreshControl refreshing={isRefreshing} onRefresh={refreshAccounts} />
+        <RefreshControl
+          refreshing={isRefreshing}
+          onRefresh={refreshAccounts}
+          colors={[colors.primary]}
+          tintColor={colors.primary}
+          progressBackgroundColor={colors.surface}
+        />
       }
     >
       <View style={styles.header}>
@@ -219,7 +229,7 @@ export default function AccountsScreen() {
 
       {isLoading ? (
         <View style={styles.stateContainer}>
-          <ActivityIndicator color="#176c4c" />
+          <ActivityIndicator color={colors.primary} />
           <Text style={styles.stateText}>Loading accounts</Text>
         </View>
       ) : loadError ? (
@@ -256,13 +266,14 @@ export default function AccountsScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: Palette) =>
+  StyleSheet.create({
   container: {
     flexGrow: 1,
     paddingHorizontal: 20,
     paddingTop: 18,
     paddingBottom: 40,
-    backgroundColor: "#f3f6f4",
+    backgroundColor: colors.background,
   },
   header: {
     flexDirection: "row",
@@ -272,17 +283,17 @@ const styles = StyleSheet.create({
   },
   kicker: {
     marginBottom: 4,
-    color: "#167253",
+    color: colors.primary,
     fontSize: 11,
     fontWeight: "800",
   },
   headerCount: {
-    color: "#9aaba2",
+    color: colors.textMuted,
     fontSize: 22,
     fontWeight: "700",
   },
   title: {
-    color: "#182522",
+    color: colors.textPrimary,
     fontSize: 28,
     fontWeight: "800",
   },
@@ -290,34 +301,34 @@ const styles = StyleSheet.create({
     marginBottom: 24,
     padding: 20,
     borderRadius: 8,
-    backgroundColor: "#174f3b",
+    backgroundColor: colors.summary,
   },
   summaryLabel: {
     marginBottom: 8,
-    color: "#c6ded2",
+    color: colors.onSummaryMuted,
     fontSize: 13,
     fontWeight: "600",
   },
   totalBalance: {
-    color: "#ffffff",
+    color: colors.onSummary,
     fontSize: 30,
     fontWeight: "800",
   },
   summaryMeta: {
     marginTop: 8,
-    color: "#c6ded2",
+    color: colors.onSummaryMuted,
     fontSize: 13,
   },
   formSection: {
     marginBottom: 26,
     padding: 16,
     borderWidth: 1,
-    borderColor: "#e1e8e4",
+    borderColor: colors.border,
     borderRadius: 8,
-    backgroundColor: "#ffffff",
+    backgroundColor: colors.surface,
   },
   sectionTitle: {
-    color: "#182522",
+    color: colors.textPrimary,
     fontSize: 18,
     fontWeight: "800",
   },
@@ -328,7 +339,7 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   listCount: {
-    color: "#77847d",
+    color: colors.textMuted,
     fontSize: 14,
     fontWeight: "700",
   },
@@ -336,12 +347,12 @@ const styles = StyleSheet.create({
     marginBottom: 16,
     padding: 12,
     borderWidth: 1,
-    borderColor: "#edc2bd",
+    borderColor: colors.dangerBorder,
     borderRadius: 8,
-    backgroundColor: "#fff4f2",
+    backgroundColor: colors.dangerSurface,
   },
   errorText: {
-    color: "#a33d32",
+    color: colors.danger,
     fontSize: 13,
   },
   stateContainer: {
@@ -350,7 +361,7 @@ const styles = StyleSheet.create({
     paddingVertical: 28,
   },
   stateText: {
-    color: "#68766f",
+    color: colors.textSecondary,
     fontSize: 14,
     textAlign: "center",
   },
@@ -359,10 +370,10 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     paddingHorizontal: 18,
     borderRadius: 8,
-    backgroundColor: "#176c4c",
+    backgroundColor: colors.primary,
   },
   retryText: {
-    color: "#ffffff",
+    color: colors.onPrimary,
     fontSize: 14,
     fontWeight: "700",
   },
@@ -372,7 +383,7 @@ const styles = StyleSheet.create({
     paddingVertical: 28,
   },
   emptyTitle: {
-    color: "#263a31",
+    color: colors.textPrimary,
     fontSize: 16,
     fontWeight: "700",
   },

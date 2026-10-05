@@ -1,7 +1,7 @@
 import type { Account } from "@/features/accounts/account.types";
 import type { TransactionType } from "@/features/transactions/transaction.types";
 import DateTimePicker from "@expo/ui/community/datetime-picker";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import {
   Keyboard,
   Platform,
@@ -11,6 +11,8 @@ import {
   TextInput,
   View,
 } from "react-native";
+import type { Palette } from "../theme/colors";
+import { useTheme } from "../theme/use-theme";
 import { formatDateLabel, fromDateString, toDateString } from "../utils/date";
 
 type TransactionFormProps = {
@@ -50,6 +52,8 @@ export default function TransactionForm({
   onSubmit,
   onCancelEdit,
 }: TransactionFormProps) {
+  const { colors, isDarkMode } = useTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const isDisabled = isSaving || accounts.length === 0;
   const [isPickerOpen, setIsPickerOpen] = useState(false);
   const selectedDate = fromDateString(date);
@@ -127,7 +131,7 @@ export default function TransactionForm({
             value={amount}
             onChangeText={onAmountChange}
             placeholder="0.00"
-            placeholderTextColor="#929b98"
+            placeholderTextColor={colors.placeholder}
             style={styles.input}
           />
         </View>
@@ -139,7 +143,8 @@ export default function TransactionForm({
                 value={selectedDate}
                 mode="date"
                 display="compact"
-                accentColor="#176c4c"
+                accentColor={colors.primary}
+                themeVariant={isDarkMode ? "dark" : "light"}
                 onValueChange={(_event, next) =>
                   onDateChange(toDateString(next))
                 }
@@ -162,7 +167,7 @@ export default function TransactionForm({
                   value={selectedDate}
                   mode="date"
                   presentation="dialog"
-                  accentColor="#176c4c"
+                  accentColor={colors.primary}
                   onValueChange={(_event, next) => {
                     setIsPickerOpen(false);
                     onDateChange(toDateString(next));
@@ -181,7 +186,7 @@ export default function TransactionForm({
         value={description}
         onChangeText={onDescriptionChange}
         placeholder="What was it for?"
-        placeholderTextColor="#929b98"
+        placeholderTextColor={colors.placeholder}
         style={styles.input}
         returnKeyType="done"
         onSubmitEditing={Keyboard.dismiss}
@@ -221,18 +226,19 @@ export default function TransactionForm({
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: Palette) =>
+  StyleSheet.create({
   container: {
     marginBottom: 24,
     padding: 16,
     borderWidth: 1,
-    borderColor: "#e1e8e4",
+    borderColor: colors.border,
     borderRadius: 8,
-    backgroundColor: "#ffffff",
+    backgroundColor: colors.surface,
   },
   sectionTitle: {
     marginBottom: 14,
-    color: "#182522",
+    color: colors.textPrimary,
     fontSize: 18,
     fontWeight: "700",
   },
@@ -247,29 +253,29 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     borderWidth: 1,
-    borderColor: "#d8e1dc",
+    borderColor: colors.borderStrong,
     borderRadius: 8,
-    backgroundColor: "#f8faf9",
+    backgroundColor: colors.surfaceMuted,
   },
   segmentIncomeSelected: {
-    borderColor: "#17734f",
-    backgroundColor: "#e8f5ee",
+    borderColor: colors.income,
+    backgroundColor: colors.incomeSurface,
   },
   segmentExpenseSelected: {
-    borderColor: "#bd5147",
-    backgroundColor: "#fff0ed",
+    borderColor: colors.expense,
+    backgroundColor: colors.expenseSurface,
   },
   segmentText: {
-    color: "#55645d",
+    color: colors.textSecondary,
     fontSize: 14,
     fontWeight: "700",
   },
   segmentTextSelected: {
-    color: "#182522",
+    color: colors.textPrimary,
   },
   label: {
     marginBottom: 7,
-    color: "#53625b",
+    color: colors.textSecondary,
     fontSize: 12,
     fontWeight: "700",
   },
@@ -284,25 +290,25 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     paddingHorizontal: 12,
     borderWidth: 1,
-    borderColor: "#d8e1dc",
+    borderColor: colors.borderStrong,
     borderRadius: 8,
-    backgroundColor: "#ffffff",
+    backgroundColor: colors.surface,
   },
   accountOptionSelected: {
-    borderColor: "#167253",
-    backgroundColor: "#e8f2ed",
+    borderColor: colors.primary,
+    backgroundColor: colors.primarySurface,
   },
   accountOptionText: {
-    color: "#53625b",
+    color: colors.textSecondary,
     fontSize: 13,
     fontWeight: "600",
   },
   accountOptionTextSelected: {
-    color: "#16583f",
+    color: colors.onPrimarySurface,
   },
   helperText: {
     marginBottom: 16,
-    color: "#68766f",
+    color: colors.textSecondary,
     fontSize: 13,
   },
   inputRow: {
@@ -320,17 +326,17 @@ const styles = StyleSheet.create({
     marginBottom: 14,
     paddingHorizontal: 12,
     borderWidth: 1,
-    borderColor: "#d8e1dc",
+    borderColor: colors.borderStrong,
     borderRadius: 8,
-    backgroundColor: "#ffffff",
-    color: "#182522",
+    backgroundColor: colors.surface,
+    color: colors.textPrimary,
     fontSize: 15,
   },
   dateButton: {
     justifyContent: "center",
   },
   dateText: {
-    color: "#182522",
+    color: colors.textPrimary,
     fontSize: 15,
   },
   iosDate: {
@@ -341,7 +347,7 @@ const styles = StyleSheet.create({
   },
   errorText: {
     marginBottom: 12,
-    color: "#a33d32",
+    color: colors.danger,
     fontSize: 13,
   },
   saveButton: {
@@ -350,13 +356,13 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     marginTop: 2,
     borderRadius: 8,
-    backgroundColor: "#176c4c",
+    backgroundColor: colors.primary,
   },
   saveButtonMuted: {
     opacity: 0.55,
   },
   saveButtonText: {
-    color: "#ffffff",
+    color: colors.onPrimary,
     fontSize: 15,
     fontWeight: "800",
   },
@@ -367,7 +373,7 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
   cancelButtonText: {
-    color: "#53625b",
+    color: colors.textSecondary,
     fontSize: 14,
     fontWeight: "700",
   },

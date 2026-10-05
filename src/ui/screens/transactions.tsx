@@ -8,19 +8,22 @@ import type {
 } from "@/features/transactions/transaction.types";
 import { Link, useFocusEffect } from "expo-router";
 import { useSQLiteContext, type SQLiteDatabase } from "expo-sqlite";
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
   FlatList,
   Keyboard,
   Pressable,
+  RefreshControl,
   StyleSheet,
   Text,
   View,
 } from "react-native";
 import TransactionCard from "../components/transaction-card";
 import TransactionForm from "../components/transaction-form";
+import type { Palette } from "../theme/colors";
+import { useTheme } from "../theme/use-theme";
 import { toDateString } from "../utils/date";
 
 type PageData = {
@@ -44,6 +47,8 @@ async function loadPageData(db: SQLiteDatabase): Promise<PageData> {
 }
 
 export default function TransactionsScreen() {
+  const { colors } = useTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [allAccounts, setAllAccounts] = useState<Account[]>([]);
@@ -238,8 +243,15 @@ export default function TransactionsScreen() {
       contentContainerStyle={styles.content}
       data={transactions}
       keyExtractor={(item) => item.id}
-      refreshing={isRefreshing}
-      onRefresh={refreshData}
+      refreshControl={
+        <RefreshControl
+          refreshing={isRefreshing}
+          onRefresh={refreshData}
+          colors={[colors.primary]}
+          tintColor={colors.primary}
+          progressBackgroundColor={colors.surface}
+        />
+      }
       ListHeaderComponent={
         <>
           <View style={styles.header}>
@@ -291,7 +303,7 @@ export default function TransactionsScreen() {
 
           <Text style={styles.listTitle}>Recent activity</Text>
           {isLoading ? (
-            <ActivityIndicator color="#167253" style={styles.loading} />
+            <ActivityIndicator color={colors.primary} style={styles.loading} />
           ) : null}
         </>
       }
@@ -317,10 +329,11 @@ export default function TransactionsScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: Palette) =>
+  StyleSheet.create({
   list: {
     flex: 1,
-    backgroundColor: "#f3f6f4",
+    backgroundColor: colors.background,
   },
   content: {
     flexGrow: 1,
@@ -335,12 +348,12 @@ const styles = StyleSheet.create({
   },
   kicker: {
     marginBottom: 4,
-    color: "#167253",
+    color: colors.primary,
     fontSize: 11,
     fontWeight: "800",
   },
   title: {
-    color: "#182522",
+    color: colors.textPrimary,
     fontSize: 28,
     fontWeight: "800",
   },
@@ -353,12 +366,12 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     paddingHorizontal: 14,
     borderWidth: 1,
-    borderColor: "#c8d7d0",
+    borderColor: colors.borderStrong,
     borderRadius: 8,
-    backgroundColor: "#ffffff",
+    backgroundColor: colors.surface,
   },
   accountsLinkText: {
-    color: "#245b49",
+    color: colors.onPrimarySurface,
     fontSize: 14,
     fontWeight: "700",
   },
@@ -370,23 +383,23 @@ const styles = StyleSheet.create({
     marginBottom: 16,
     padding: 12,
     borderWidth: 1,
-    borderColor: "#edc2bd",
+    borderColor: colors.dangerBorder,
     borderRadius: 8,
-    backgroundColor: "#fff4f2",
+    backgroundColor: colors.dangerSurface,
   },
   errorText: {
     flex: 1,
-    color: "#a33d32",
+    color: colors.danger,
     fontSize: 13,
   },
   retryText: {
-    color: "#8e332b",
+    color: colors.danger,
     fontSize: 14,
     fontWeight: "700",
   },
   listTitle: {
     marginBottom: 12,
-    color: "#182522",
+    color: colors.textPrimary,
     fontSize: 18,
     fontWeight: "700",
   },
@@ -395,7 +408,7 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     paddingVertical: 18,
-    color: "#68766f",
+    color: colors.textSecondary,
     fontSize: 14,
     textAlign: "center",
   },

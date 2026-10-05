@@ -1,5 +1,8 @@
 import type { AccountType } from "@/features/accounts/account.types";
+import { useMemo } from "react";
 import { Pressable, StyleSheet, Text, TextInput, View } from "react-native";
+import type { Palette } from "../theme/colors";
+import { useTheme } from "../theme/use-theme";
 
 type AccountFormProps = {
   name: string;
@@ -28,6 +31,9 @@ export default function AccountForm({
   onTypeChange,
   onSubmit,
 }: AccountFormProps) {
+  const { colors } = useTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
+
   return (
     <View style={styles.container}>
       <Text style={styles.label}>Account name</Text>
@@ -35,7 +41,7 @@ export default function AccountForm({
         accessibilityLabel="Account name"
         style={styles.input}
         placeholder="e.g. Main bank"
-        placeholderTextColor="#929b98"
+        placeholderTextColor={colors.placeholder}
         value={name}
         onChangeText={onNameChange}
         autoCapitalize="words"
@@ -46,7 +52,7 @@ export default function AccountForm({
         accessibilityLabel="Initial balance"
         style={styles.input}
         placeholder="0.00"
-        placeholderTextColor="#929b98"
+        placeholderTextColor={colors.placeholder}
         value={initialBalance}
         onChangeText={onBalanceChange}
         keyboardType="decimal-pad"
@@ -96,13 +102,14 @@ export default function AccountForm({
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: Palette) =>
+  StyleSheet.create({
   container: {
     gap: 2,
   },
   label: {
     marginBottom: 7,
-    color: "#53625b",
+    color: colors.textSecondary,
     fontSize: 12,
     fontWeight: "700",
   },
@@ -111,10 +118,10 @@ const styles = StyleSheet.create({
     marginBottom: 14,
     paddingHorizontal: 12,
     borderWidth: 1,
-    borderColor: "#d8e1dc",
+    borderColor: colors.borderStrong,
     borderRadius: 8,
-    backgroundColor: "#ffffff",
-    color: "#182522",
+    backgroundColor: colors.surface,
+    color: colors.textPrimary,
     fontSize: 15,
   },
   typeOptions: {
@@ -129,20 +136,20 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     paddingHorizontal: 8,
     borderWidth: 1,
-    borderColor: "#d8e1dc",
+    borderColor: colors.borderStrong,
     borderRadius: 8,
-    backgroundColor: "#ffffff",
+    backgroundColor: colors.surface,
   },
   selectedTypeOption: {
-    backgroundColor: "#e8f2ed",
-    borderColor: "#167253",
+    backgroundColor: colors.primarySurface,
+    borderColor: colors.primary,
   },
   typeOptionText: {
-    color: "#53625b",
+    color: colors.textSecondary,
     fontSize: 13,
   },
   selectedTypeOptionText: {
-    color: "#16583f",
+    color: colors.onPrimarySurface,
     fontWeight: "700",
   },
   submitButton: {
@@ -151,19 +158,19 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     marginTop: 2,
     borderRadius: 8,
-    backgroundColor: "#176c4c",
+    backgroundColor: colors.primary,
   },
   submitButtonMuted: {
     opacity: 0.55,
   },
   submitButtonText: {
-    color: "#ffffff",
+    color: colors.onPrimary,
     fontSize: 15,
     fontWeight: "800",
   },
   errorText: {
     marginTop: 10,
-    color: "#a33d32",
+    color: colors.danger,
     fontSize: 13,
   },
 });

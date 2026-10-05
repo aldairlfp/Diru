@@ -1,5 +1,8 @@
 import type { Account } from "@/features/accounts/account.types";
+import { useMemo } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
+import { Palette } from "../theme/colors";
+import { useTheme } from "../theme/use-theme";
 import { formatCurrency } from "../utils/format-currency";
 
 const accountTypeLabels: Record<Account["type"], string> = {
@@ -20,6 +23,9 @@ export default function AccountCard({
   isArchiving,
   onArchive,
 }: AccountCardProps) {
+  const { colors } = useTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
+
   return (
     <View style={styles.container}>
       <View style={styles.details}>
@@ -58,72 +64,73 @@ export default function AccountCard({
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    gap: 12,
-    marginBottom: 8,
-    padding: 14,
-    borderWidth: 1,
-    borderColor: "#e5ebe7",
-    borderRadius: 8,
-    backgroundColor: "#ffffff",
-  },
-  details: {
-    flex: 1,
-    gap: 10,
-  },
-  identity: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 10,
-  },
-  typeMark: {
-    width: 34,
-    height: 34,
-    alignItems: "center",
-    justifyContent: "center",
-    borderRadius: 8,
-    backgroundColor: "#e8f2ed",
-  },
-  typeMarkText: {
-    color: "#176c4c",
-    fontSize: 15,
-    fontWeight: "800",
-  },
-  nameGroup: {
-    flex: 1,
-  },
-  name: {
-    color: "#1d2c26",
-    fontSize: 15,
-    fontWeight: "700",
-  },
-  type: {
-    marginTop: 2,
-    color: "#77847d",
-    fontSize: 12,
-  },
-  balance: {
-    color: "#1d2c26",
-    fontSize: 15,
-    fontWeight: "800",
-  },
-  archiveButton: {
-    minHeight: 40,
-    justifyContent: "center",
-    paddingHorizontal: 10,
-    borderRadius: 8,
-    backgroundColor: "#fff0ed",
-  },
-  archiveButtonPressed: {
-    opacity: 0.7,
-  },
-  archiveButtonText: {
-    color: "#a33d32",
-    fontSize: 12,
-    fontWeight: "700",
-  },
-});
+const createStyles = (colors: Palette) =>
+  StyleSheet.create({
+    container: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+      gap: 12,
+      marginBottom: 8,
+      padding: 14,
+      borderWidth: 1,
+      borderColor: colors.border,
+      borderRadius: 8,
+      backgroundColor: colors.surface,
+    },
+    details: {
+      flex: 1,
+      gap: 10,
+    },
+    identity: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 10,
+    },
+    typeMark: {
+      width: 34,
+      height: 34,
+      alignItems: "center",
+      justifyContent: "center",
+      borderRadius: 8,
+      backgroundColor: colors.typeMarkBackground,
+    },
+    typeMarkText: {
+      color: colors.typeMarkText,
+      fontSize: 15,
+      fontWeight: "800",
+    },
+    nameGroup: {
+      flex: 1,
+    },
+    name: {
+      color: colors.textPrimary,
+      fontSize: 15,
+      fontWeight: "700",
+    },
+    type: {
+      marginTop: 2,
+      color: colors.textSecondary,
+      fontSize: 12,
+    },
+    balance: {
+      color: colors.textPrimary,
+      fontSize: 15,
+      fontWeight: "800",
+    },
+    archiveButton: {
+      minHeight: 40,
+      justifyContent: "center",
+      paddingHorizontal: 10,
+      borderRadius: 8,
+      backgroundColor: colors.archiveButtonBackground,
+    },
+    archiveButtonPressed: {
+      opacity: 0.7,
+    },
+    archiveButtonText: {
+      color: colors.archiveButtonText,
+      fontSize: 12,
+      fontWeight: "700",
+    },
+  });
