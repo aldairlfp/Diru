@@ -7,6 +7,7 @@ import { SQLiteDatabase } from "expo-sqlite";
 type TransactionRow = {
   id: string;
   account_id: string;
+  category_id: string | null;
   amount: number;
   type: TransactionType;
   description: string;
@@ -19,6 +20,7 @@ function toTransaction(row: TransactionRow): Transaction {
   return {
     id: row.id,
     accountId: row.account_id,
+    categoryId: row.category_id,
     amount: row.amount,
     type: row.type,
     description: row.description,
@@ -48,11 +50,12 @@ export class TransactionRepository {
 
   async create(transaction: Transaction): Promise<void> {
     await this.db.runAsync(
-      `INSERT INTO transactions (id, account_id, amount, type, description, date, created_at, updated_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+      `INSERT INTO transactions (id, account_id, category_id, amount, type, description, date, created_at, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         transaction.id,
         transaction.accountId,
+        transaction.categoryId,
         transaction.amount,
         transaction.type,
         transaction.description,
@@ -66,10 +69,11 @@ export class TransactionRepository {
   async update(transaction: Transaction): Promise<void> {
     await this.db.runAsync(
       `UPDATE transactions
-       SET account_id = ?, amount = ?, type = ?, description = ?, date = ?, created_at = ?, updated_at = ?
+       SET account_id = ?, category_id = ?, amount = ?, type = ?, description = ?, date = ?, created_at = ?, updated_at = ?
        WHERE id = ?`,
       [
         transaction.accountId,
+        transaction.categoryId,
         transaction.amount,
         transaction.type,
         transaction.description,

@@ -48,6 +48,7 @@ export default function Layout() {
         >
           <Stack.Screen name="index" options={{ title: "Diru" }} />
           <Stack.Screen name="accounts" options={{ title: "Accounts" }} />
+          <Stack.Screen name="categories" options={{ title: "Categories" }} />
           <Stack.Screen name="backup" options={{ title: "Backup" }} />
         </Stack>
       </SQLiteProvider>

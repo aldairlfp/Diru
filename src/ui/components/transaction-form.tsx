@@ -1,4 +1,5 @@
 import type { Account } from "@/features/accounts/account.types";
+import type { Category } from "@/features/categories/category.types";
 import type { TransactionType } from "@/features/transactions/transaction.types";
 import DateTimePicker from "@expo/ui/community/datetime-picker";
 import { useMemo, useState } from "react";
@@ -18,6 +19,8 @@ import { formatDateLabel, fromDateString, toDateString } from "../utils/date";
 type TransactionFormProps = {
   accounts: Account[];
   accountId: string;
+  categories: Category[];
+  categoryId: string | null;
   type: TransactionType;
   amount: string;
   date: string;
@@ -26,6 +29,7 @@ type TransactionFormProps = {
   isSaving: boolean;
   isEditing: boolean;
   onAccountChange: (accountId: string) => void;
+  onCategoryChange: (categoryId: string | null) => void;
   onTypeChange: (type: TransactionType) => void;
   onAmountChange: (amount: string) => void;
   onDateChange: (date: string) => void;
@@ -37,6 +41,8 @@ type TransactionFormProps = {
 export default function TransactionForm({
   accounts,
   accountId,
+  categories,
+  categoryId,
   type,
   amount,
   date,
@@ -45,6 +51,7 @@ export default function TransactionForm({
   isSaving,
   isEditing,
   onAccountChange,
+  onCategoryChange,
   onTypeChange,
   onAmountChange,
   onDateChange,
@@ -55,6 +62,9 @@ export default function TransactionForm({
   const { colors, isDarkMode } = useTheme();
   const styles = useMemo(() => createStyles(colors), [colors]);
   const isDisabled = isSaving || accounts.length === 0;
+  const visibleCategories = categories.filter(
+    (category) => category.type === type,
+  );
   const [isPickerOpen, setIsPickerOpen] = useState(false);
   const selectedDate = fromDateString(date);
 
@@ -119,6 +129,41 @@ export default function TransactionForm({
       ) : (
         <Text style={styles.helperText}>
           No accounts yet. Add an account to continue.
+        </Text>
+      )}
+
+      <Text style={styles.label}>Category (optional)</Text>
+      {visibleCategories.length > 0 ? (
+        <View style={styles.accountOptions}>
+          {visibleCategories.map((category) => {
+            const isSelected = categoryId === category.id;
+            return (
+              <Pressable
+                key={category.id}
+                accessibilityRole="button"
+                accessibilityState={{ selected: isSelected }}
+                onPress={() => onCategoryChange(isSelected ? null : category.id)}
+                style={[
+                  styles.accountOption,
+                  isSelected && styles.accountOptionSelected,
+                ]}
+              >
+                <Text
+                  style={[
+                    styles.accountOptionText,
+                    isSelected && styles.accountOptionTextSelected,
+                  ]}
+                >
+                  {category.icon ? `${category.icon} ` : ""}
+                  {category.name}
+                </Text>
+              </Pressable>
+            );
+          })}
+        </View>
+      ) : (
+        <Text style={styles.helperText}>
+          No {type} categories yet. Add some from the Categories screen.
         </Text>
       )}
 

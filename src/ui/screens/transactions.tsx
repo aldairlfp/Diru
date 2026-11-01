@@ -1,5 +1,7 @@
 import { AccountRepository } from "@/features/accounts/account.repository";
 import type { Account } from "@/features/accounts/account.types";
+import { CategoryRepository } from "@/features/categories/category.repository";
+import type { Category } from "@/features/categories/category.types";
 import { TransactionRepository } from "@/features/transactions/transaction.repository";
 import { TransactionService } from "@/features/transactions/transaction.service";
 import type {
@@ -29,19 +31,22 @@ import { toDateString } from "../utils/date";
 type PageData = {
   accounts: Account[];
   allAccounts: Account[];
+  categories: Category[];
   transactions: Transaction[];
 };
 
 async function loadPageData(db: SQLiteDatabase): Promise<PageData> {
   const accountRepository = new AccountRepository(db);
-  const [allAccounts, transactions] = await Promise.all([
+  const [allAccounts, categories, transactions] = await Promise.all([
     accountRepository.getAll(true),
+    new CategoryRepository(db).getAll(),
     new TransactionService(new TransactionRepository(db)).getAll(),
   ]);
 
   return {
     accounts: allAccounts.filter((account) => !account.archived),
     allAccounts,
+    categories,
     transactions,
   };
 }
@@ -52,6 +57,8 @@ export default function TransactionsScreen() {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [allAccounts, setAllAccounts] = useState<Account[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [categoryId, setCategoryId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -74,6 +81,12 @@ export default function TransactionsScreen() {
       const data = await loadPageData(db);
       setAccounts(data.accounts);
       setAllAccounts(data.allAccounts);
+      setCategories(data.categories);
+      setCategoryId((current) =>
+        current && data.categories.some((category) => category.id === current)
+          ? current
+          : null,
+      );
       setTransactions(data.transactions);
       setAccountId((current) => {
         const selectable = editingIdRef.current
@@ -112,6 +125,7 @@ export default function TransactionsScreen() {
   function resetForm() {
     editingIdRef.current = null;
     setEditingId(null);
+    setCategoryId(null);
     setAmount("");
     setDescription("");
     setDate(toDateString(new Date()));
@@ -123,10 +137,18 @@ export default function TransactionsScreen() {
     );
   }
 
+  function handleTypeChange(next: TransactionType) {
+    if (next === type) return;
+    setType(next);
+    // Categories belong to one type, so the old pick no longer applies.
+    setCategoryId(null);
+  }
+
   function startEdit(transaction: Transaction) {
     editingIdRef.current = transaction.id;
     setEditingId(transaction.id);
     setType(transaction.type);
+    setCategoryId(transaction.categoryId);
     setAccountId(transaction.accountId);
     setAmount(String(transaction.amount));
     setDescription(transaction.description);
@@ -203,6 +225,7 @@ export default function TransactionsScreen() {
         await service.update({
           ...original,
           accountId,
+          categoryId,
           type,
           amount: parsedAmount,
           description: description.trim(),
@@ -212,6 +235,7 @@ export default function TransactionsScreen() {
         await service.create({
           id: Date.now().toString(),
           accountId,
+          categoryId,
           type,
           amount: parsedAmount,
           description: description.trim(),
@@ -259,18 +283,24 @@ export default function TransactionsScreen() {
               <Text style={styles.kicker}>MONEY FLOW</Text>
               <Text style={styles.title}>Transactions</Text>
             </View>
-            <View style={styles.headerLinks}>
-              <Link href="/backup" asChild>
-                <Pressable accessibilityRole="button" style={styles.accountsLink}>
-                  <Text style={styles.accountsLinkText}>Backup</Text>
-                </Pressable>
-              </Link>
-              <Link href="/accounts" asChild>
-                <Pressable accessibilityRole="button" style={styles.accountsLink}>
-                  <Text style={styles.accountsLinkText}>Accounts</Text>
-                </Pressable>
-              </Link>
-            </View>
+          </View>
+
+          <View style={styles.links}>
+            <Link href="/accounts" asChild>
+              <Pressable accessibilityRole="button" style={styles.accountsLink}>
+                <Text style={styles.accountsLinkText}>Accounts</Text>
+              </Pressable>
+            </Link>
+            <Link href="/categories" asChild>
+              <Pressable accessibilityRole="button" style={styles.accountsLink}>
+                <Text style={styles.accountsLinkText}>Categories</Text>
+              </Pressable>
+            </Link>
+            <Link href="/backup" asChild>
+              <Pressable accessibilityRole="button" style={styles.accountsLink}>
+                <Text style={styles.accountsLinkText}>Backup</Text>
+              </Pressable>
+            </Link>
           </View>
 
           {loadError ? (
@@ -285,6 +315,8 @@ export default function TransactionsScreen() {
           <TransactionForm
             accounts={formAccounts}
             accountId={accountId}
+            categories={categories}
+            categoryId={categoryId}
             type={type}
             amount={amount}
             date={date}
@@ -293,7 +325,8 @@ export default function TransactionsScreen() {
             isSaving={isSaving}
             isEditing={editingId !== null}
             onAccountChange={setAccountId}
-            onTypeChange={setType}
+            onCategoryChange={setCategoryId}
+            onTypeChange={handleTypeChange}
             onAmountChange={setAmount}
             onDateChange={setDate}
             onDescriptionChange={setDescription}
@@ -314,10 +347,16 @@ export default function TransactionsScreen() {
       }
       renderItem={({ item }) => {
         const account = allAccounts.find((entry) => entry.id === item.accountId);
+        const category = categories.find((entry) => entry.id === item.categoryId);
         return (
           <TransactionCard
             transaction={item}
             accountName={account?.name ?? "Account"}
+            categoryLabel={
+              category
+                ? `${category.icon ? `${category.icon} ` : ""}${category.name}`
+                : null
+            }
             currency={account?.currency ?? "EUR"}
             isEditing={item.id === editingId}
             onEdit={startEdit}
@@ -344,7 +383,7 @@ const createStyles = (colors: Palette) =>
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    marginBottom: 20,
+    marginBottom: 12,
   },
   kicker: {
     marginBottom: 4,
@@ -357,9 +396,11 @@ const createStyles = (colors: Palette) =>
     fontSize: 28,
     fontWeight: "800",
   },
-  headerLinks: {
+  links: {
     flexDirection: "row",
+    flexWrap: "wrap",
     gap: 8,
+    marginBottom: 20,
   },
   accountsLink: {
     minHeight: 42,

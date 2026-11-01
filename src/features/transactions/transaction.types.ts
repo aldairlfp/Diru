@@ -3,6 +3,7 @@ export type TransactionType = "income" | "expense";
 export type Transaction = {
   id: string;
   accountId: string;
+  categoryId: string | null;
   type: TransactionType;
   amount: number;
   description: string;

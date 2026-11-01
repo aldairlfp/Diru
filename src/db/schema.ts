@@ -1,4 +1,8 @@
+import { CategoryRepository } from "@/features/categories/category.repository";
 import type { SQLiteDatabase } from "expo-sqlite";
+
+// Bump when a migration step is added below.
+const SCHEMA_VERSION = 1;
 
 export async function initializeDatabase(db: SQLiteDatabase) {
   await db.execAsync(`
@@ -57,4 +61,20 @@ export async function initializeDatabase(db: SQLiteDatabase) {
         REFERENCES categories(id)
     );
   `);
+
+  const row = await db.getFirstAsync<{ user_version: number }>(
+    "PRAGMA user_version",
+  );
+  const currentVersion = row?.user_version ?? 0;
+
+  if (currentVersion < 1) {
+    // Seeded once, so categories the user deletes don't come back.
+    await db.withTransactionAsync(async () => {
+      await new CategoryRepository(db).seedDefaults();
+    });
+  }
+
+  if (currentVersion < SCHEMA_VERSION) {
+    await db.execAsync(`PRAGMA user_version = ${SCHEMA_VERSION}`);
+  }
 }

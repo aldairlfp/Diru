@@ -1,6 +1,8 @@
 import type { SQLiteDatabase } from "expo-sqlite";
 import { AccountRepository } from "../accounts/account.repository";
 import type { Account, AccountType } from "../accounts/account.types";
+import { CategoryRepository } from "../categories/category.repository";
+import type { Category, CategoryType } from "../categories/category.types";
 import { TransactionRepository } from "../transactions/transaction.repository";
 import type {
   Transaction,
@@ -10,12 +12,14 @@ import type {
 const BACKUP_VERSION = 1;
 const ACCOUNT_TYPES: AccountType[] = ["cash", "bank", "savings", "credit"];
 const TRANSACTION_TYPES: TransactionType[] = ["income", "expense"];
+const CATEGORY_TYPES: CategoryType[] = ["income", "expense"];
 
 export type BackupFile = {
   app: "diru";
   version: number;
   exportedAt: string;
   accounts: Account[];
+  categories: Category[];
   transactions: Transaction[];
 };
 
@@ -72,6 +76,18 @@ function parseAccount(raw: unknown, index: number): Account {
   };
 }
 
+function parseCategory(raw: unknown, index: number): Category {
+  const where = `category #${index + 1}`;
+  if (!isRecord(raw)) fail(`${where} is not an object.`);
+
+  return {
+    id: text(raw, "id", where),
+    name: text(raw, "name", where),
+    type: oneOf(raw, "type", CATEGORY_TYPES, where),
+    icon: typeof raw.icon === "string" && raw.icon ? raw.icon : undefined,
+  };
+}
+
 function parseTransaction(raw: unknown, index: number): Transaction {
   const where = `transaction #${index + 1}`;
   if (!isRecord(raw)) fail(`${where} is not an object.`);
@@ -82,6 +98,10 @@ function parseTransaction(raw: unknown, index: number): Transaction {
   return {
     id: text(raw, "id", where),
     accountId: text(raw, "accountId", where),
+    categoryId:
+      typeof raw.categoryId === "string" && raw.categoryId
+        ? raw.categoryId
+        : null,
     type: oneOf(raw, "type", TRANSACTION_TYPES, where),
     amount: value,
     description: text(raw, "description", where),
@@ -110,12 +130,24 @@ export function parseBackup(json: string): BackupFile {
   }
 
   const accounts = raw.accounts.map(parseAccount);
+  // Older backups have no categories field.
+  const categories = Array.isArray(raw.categories)
+    ? raw.categories.map(parseCategory)
+    : [];
   const transactions = raw.transactions.map(parseTransaction);
 
   const accountIds = new Set<string>();
   for (const account of accounts) {
     if (accountIds.has(account.id)) fail(`duplicate account id ${account.id}.`);
     accountIds.add(account.id);
+  }
+
+  const categoryIds = new Set<string>();
+  for (const category of categories) {
+    if (categoryIds.has(category.id)) {
+      fail(`duplicate category id ${category.id}.`);
+    }
+    categoryIds.add(category.id);
   }
 
   const transactionIds = new Set<string>();
@@ -127,6 +159,9 @@ export function parseBackup(json: string): BackupFile {
     if (!accountIds.has(transaction.accountId)) {
       fail(`transaction "${transaction.description}" points to a missing account.`);
     }
+    if (transaction.categoryId && !categoryIds.has(transaction.categoryId)) {
+      fail(`transaction "${transaction.description}" points to a missing category.`);
+    }
   }
 
   return {
@@ -134,6 +169,7 @@ export function parseBackup(json: string): BackupFile {
     version: BACKUP_VERSION,
     exportedAt: typeof raw.exportedAt === "string" ? raw.exportedAt : "",
     accounts,
+    categories,
     transactions,
   };
 }
@@ -142,8 +178,9 @@ export class BackupService {
   constructor(private db: SQLiteDatabase) {}
 
   async exportBackup() {
-    const [accounts, transactions] = await Promise.all([
+    const [accounts, categories, transactions] = await Promise.all([
       new AccountRepository(this.db).getAll(true),
+      new CategoryRepository(this.db).getAll(),
       new TransactionRepository(this.db).getAll(),
     ]);
 
@@ -152,6 +189,7 @@ export class BackupService {
       version: BACKUP_VERSION,
       exportedAt: new Date().toISOString(),
       accounts,
+      categories,
       transactions,
     };
 
@@ -165,13 +203,21 @@ export class BackupService {
   // Replaces all data atomically: if any insert fails, the old data stays.
   async restoreBackup(backup: BackupFile): Promise<void> {
     const accountRepo = new AccountRepository(this.db);
+    const categoryRepo = new CategoryRepository(this.db);
     const transactionRepo = new TransactionRepository(this.db);
 
     await this.db.withTransactionAsync(async () => {
       await transactionRepo.deleteAll();
+      await categoryRepo.deleteAll();
       await accountRepo.deleteAll();
       for (const account of backup.accounts) {
         await accountRepo.create(account);
+      }
+      for (const category of backup.categories) {
+        await categoryRepo.create(category);
+      }
+      if (backup.categories.length === 0) {
+        await categoryRepo.seedDefaults();
       }
       for (const transaction of backup.transactions) {
         await transactionRepo.create(transaction);

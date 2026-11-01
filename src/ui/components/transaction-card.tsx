@@ -9,6 +9,7 @@ import { formatDateLabel, fromDateString } from "../utils/date";
 type TransactionCardProps = {
   transaction: Transaction;
   accountName: string;
+  categoryLabel: string | null;
   currency: string;
   isEditing: boolean;
   onEdit: (transaction: Transaction) => void;
@@ -18,6 +19,7 @@ type TransactionCardProps = {
 export default function TransactionCard({
   transaction,
   accountName,
+  categoryLabel,
   currency,
   isEditing,
   onEdit,
@@ -38,6 +40,7 @@ export default function TransactionCard({
       <View style={styles.details}>
         <Text style={styles.description}>{transaction.description}</Text>
         <Text style={styles.meta}>
+          {categoryLabel ? `${categoryLabel} · ` : ""}
           {accountName} · {formatDateLabel(fromDateString(transaction.date))}
         </Text>
         <View style={styles.actions}>
