@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "Diru",
-    "slug": "diru",
+    "slug": "Diru",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
@@ -68,9 +68,9 @@
         }
       },
       "eas": {
-        "projectId": "f7b41b52-ed55-49a6-9102-50bf57da74dd"
+        "projectId": "10feec91-264a-4100-b14e-b1f9ec80e194"
       }
     },
-    "owner": "aldairlfps-organization"
+    "owner": "aldairlfp"
   }
 }
